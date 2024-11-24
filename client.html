@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gyroscope Client</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 50px;
+        }
+        h1 {
+            font-size: 24px;
+        }
+        p {
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Gyroscope Data</h1>
+    <p id="status">Connecting...</p>
+    <p id="data">No data yet</p>
+
+    <script>
+        // Connect to WebSocket server
+        const ws = new WebSocket('ws://172.20.16.1:8080');
+
+        // Update status when connected
+        ws.onopen = () => {
+            document.getElementById('status').textContent = 'Connected to server';
+        };
+
+        // Handle server errors
+        ws.onerror = (error) => {
+            document.getElementById('status').textContent = 'Error connecting to server';
+            console.error('WebSocket error:', error);
+        };
+
+    // Check if the DeviceOrientationEvent API is available
+    if (window.DeviceOrientationEvent) {
+        document.getElementById('data').textContent = 'DeviceOrientationEvent is supported.';
+
+        // Add an event listener for orientation changes
+        window.addEventListener('deviceorientation', (event) => {
+            const alpha = event.alpha !== null ? event.alpha : 'null';
+            const beta = event.beta !== null ? event.beta : 'null';
+            const gamma = event.gamma !== null ? event.gamma : 'null';
+
+            // Display data on the webpage
+            document.getElementById('data').textContent = `Alpha: ${alpha}, Beta: ${beta}, Gamma: ${gamma}`;
+        });
+    } else {
+        document.getElementById('data').textContent = 'DeviceOrientationEvent is NOT supported by this device or browser.';
+    }
+
+
+
+        // Handle gyroscope data
+        if (window.DeviceOrientationEvent) {
+            window.addEventListener('deviceorientation', (event) => {
+                const gyroData = {
+                    alpha: event.alpha, // Rotation around z-axis
+                    beta: event.beta,   // Rotation around x-axis
+                    gamma: event.gamma  // Rotation around y-axis
+                };
+
+                // Display data on the page
+                document.getElementById('data').textContent = `Alpha: ${gyroData.alpha}, Beta: ${gyroData.beta}, Gamma: ${gyroData.gamma}`;
+
+                // Send data to the server
+                if (ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify(gyroData));
+                }
+            });
+        } else {
+            document.getElementById('data').textContent = 'Device does not support gyroscope';
+        }
+    </script>
+</body>
+</html>
