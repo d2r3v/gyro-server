@@ -1,21 +1,27 @@
 const WebSocket = require('ws');
+const http = require('http');
 
-// Create a WebSocket server on port 8080
-const wss = new WebSocket.Server({ port: 8080 });
+// Create an HTTP server first
+const server = http.createServer((req, res) => {
+    res.writeHead(200, {'Content-Type': 'text/plain'});
+    res.end('Hello from server!');
+});
 
-console.log("WebSocket server is running on ws://localhost:8080");
+// Create a WebSocket server attached to the HTTP server
+const ws = new WebSocket.Server({ server });
 
-// Handle new client connections
-wss.on('connection', (ws) => {
-    console.log('New client connected');
+ws.on('message', (message) => {
+    try {
+        // Parse the received JSON message
+        const gyroData = JSON.parse(message);
+        console.log('Received gyroscope data:', gyroData);
+    } catch (error) {
+        console.log('Error parsing message:', error);
+    }
+});
 
-    // Listen for messages from the client
-    ws.on('message', (message) => {
-        console.log('Received:', message);
-    });
 
-    // Handle client disconnection
-    ws.on('close', () => {
-        console.log('Client disconnected');
-    });
+// Listen for incoming requests on port 8080
+server.listen(8080, '0.0.0.0', () => {
+    console.log('Server is listening on ws://0.0.0.0:8080');
 });
