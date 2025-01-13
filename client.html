@@ -25,7 +25,7 @@
 
     <script>
         // Connect to WebSocket server
-        const ws = new WebSocket('ws://172.20.16.1'); 
+        const ws = new WebSocket('ws://10.80.26.85:8080'); 
     
         // Update status when connected
         ws.onopen = () => {
@@ -44,30 +44,48 @@
             console.log('WebSocket connection closed');
         };
     
-        // Handle gyroscope data
-        if (window.DeviceOrientationEvent) {
-            window.addEventListener('deviceorientation', (event) => {
+ // Check if Generic Sensor API is supported
+ if ('Gyroscope' in window) {
+        try {
+            // Create a gyroscope sensor
+            const gyroscope = new Gyroscope({frequency: 60}); // Adjust frequency if needed
+
+            // Start the sensor
+            gyroscope.start();
+
+            // Listen for gyroscope data
+            gyroscope.addEventListener('reading', () => {
                 const gyroData = {
-                    alpha: event.alpha, // Rotation around z-axis
-                    beta: event.beta,   // Rotation around x-axis
-                    gamma: event.gamma  // Rotation around y-axis
+                    x: gyroscope.x, // Rotation rate around x-axis
+                    y: gyroscope.y, // Rotation rate around y-axis
+                    z: gyroscope.z  // Rotation rate around z-axis
                 };
-    
+
                 // Log data to check it's being generated correctly
                 console.log('Gyroscope data:', gyroData);
-    
+
                 // Display data on the page
-                document.getElementById('data').textContent = `Alpha: ${gyroData.alpha}, Beta: ${gyroData.beta}, Gamma: ${gyroData.gamma}`;
-    
+                document.getElementById('data').textContent = `X: ${gyroData.x}, Y: ${gyroData.y}, Z: ${gyroData.z}`;
+
                 // Send data to the server if WebSocket is open
                 if (ws.readyState === WebSocket.OPEN) {
-                    console.log('Sending gyroscope data to server:', gyroData);  // Check if this log is printed
+                    console.log('Sending gyroscope data to server:', gyroData); // Check if this log is printed
                     ws.send(JSON.stringify(gyroData)); // Send data as JSON string
                 }
             });
-        } else {
-            document.getElementById('data').textContent = 'Device does not support gyroscope';
+
+            // Handle sensor errors
+            gyroscope.addEventListener('error', (event) => {
+                console.error('Gyroscope error:', event.error.name, event.error.message);
+                document.getElementById('data').textContent = 'Gyroscope error: ' + event.error.message;
+            });
+        } catch (error) {
+            console.error('Failed to initialize gyroscope:', error);
+            document.getElementById('data').textContent = 'Gyroscope not supported or failed to initialize';
         }
+    } else {
+        document.getElementById('data').textContent = 'Gyroscope API not supported on this device';
+    }
     </script>
        
 </body>
